@@ -78,26 +78,26 @@ int main()
 	struct DFS_vertex* DFS_vertices;
 	DFS_vertices = malloc(sizeof(struct DFS_vertex)*num_v);
 	int source_index = 0;
-	//printf("With %c as the source vertex,\n", v_names[source_index]);
-	//DFS(Adj_array, num_v, DFS_vertices, source_index, NULL);
-	//printDFS(DFS_vertices, num_v, v_names);
+	printf("With %c as the source vertex,\n", v_names[source_index]);
+	DFS(Adj_array, num_v, DFS_vertices, source_index, NULL);
+	printDFS(DFS_vertices, num_v, v_names);
 
 	printf("\n");
 
 	// Transpose of adjacency matrix
 	int** Adj_mat_trans = malloc(sizeof(int*)*num_v);
 	for (int i = 0; i<num_v; i++) Adj_mat_trans[i] = malloc(sizeof(int)*num_v);
-	//getTransAdjMat(Adj_mat, Adj_mat_trans, num_v);
-	//printf("Transpose of Adjacency Matrix\n");
-	//printMat(Adj_mat_trans, num_v);
+	getTransAdjMat(Adj_mat, Adj_mat_trans, num_v);
+	printf("Transpose of Adjacency Matrix\n");
+	printMat(Adj_mat_trans, num_v);
 
 	printf("\n");
 
 	// getting the array of adjacency list from the transpose of the adjacency matrix
 	struct adj_list** Adj_array_trans;
 	Adj_array_trans = malloc(sizeof(struct adj_list*)*num_v);
-	//getAdjArray(Adj_array_trans, num_v, Adj_mat_trans);
-	//printAdjArray(Adj_array_trans, num_v, v_names);
+	getAdjArray(Adj_array_trans, num_v, Adj_mat_trans);
+	printAdjArray(Adj_array_trans, num_v, v_names);
 
 	printf("\n");
 
@@ -121,17 +121,17 @@ int main()
 	struct DFS_vertex* DFS_vertices_second;
 	DFS_vertices_second = malloc(sizeof(struct DFS_vertex)*num_v);
 	source_index = originalIndex[0];
-	//printf("With %c as the source vertex,\n", v_names[source_index]);
-	//DFS(Adj_array_trans, num_v, DFS_vertices_second, source_index, originalIndex);
-	//printDFS(DFS_vertices_second, num_v, v_names);
+	printf("With %c as the source vertex,\n", v_names[source_index]);
+	DFS(Adj_array_trans, num_v, DFS_vertices_second, source_index, originalIndex);
+	printDFS(DFS_vertices_second, num_v, v_names);
 
 	printf("\n");
 
 	// Find SSCs
 	int** SSCs = malloc(sizeof(int*)*num_v);
 	for (int i = 0; i<num_v; i++) SSCs[i] = malloc(sizeof(int)*num_v);
-	//int num_SSCs = findSSCs(DFS_vertices_second, num_v, SSCs);
-	//printSSCs(SSCs, num_SSCs, v_names);
+	int num_SSCs = findSSCs(DFS_vertices_second, num_v, SSCs);
+	printSSCs(SSCs, num_SSCs, v_names);
 
 	// freeing allocated memories
 	for (int i = 0; i<num_v; i++)
@@ -270,8 +270,10 @@ void printAdjArray(struct adj_list** Adj_array, int num_v, char* v_names)
 int DFS_VISIT(struct adj_list** Adj_array, int num_v, struct DFS_vertex* DFS_vertices, int u, int time)
 {
 	// change color to gray
+	DFS_vertices[u].color = GRAY;
 	time++;
 	// update discovery time
+	DFS_vertices[u].dis = time;
 	struct adj_list* cur_list = Adj_array[u]->next;
 	while (cur_list != NULL)
 	{
@@ -283,8 +285,10 @@ int DFS_VISIT(struct adj_list** Adj_array, int num_v, struct DFS_vertex* DFS_ver
 		cur_list = cur_list->next;
 	}
 	// change color to black
+	DFS_vertices[u].color = BLACK;
 	time++;
 	// update finish time
+	DFS_vertices[u].fin = time;
 
 	return time;
 }
@@ -294,24 +298,29 @@ void DFS(struct adj_list** Adj_array, int num_v, struct DFS_vertex* DFS_vertices
 	for (int u = 0; u<num_v; u++)
 	{
 		//each vertex's color has to be initialized to WHITE;
+		DFS_vertices[u].color = WHITE;
 		DFS_vertices[u].pi = -1; //NULL;
 	}
 	int time = 0;
 
 	// do DFS_VISIT for the source vertex first
-	//time = DFS_VISIT(Adj_array, num_v, DFS_vertices, source_index, time);
+	time = DFS_VISIT(Adj_array, num_v, DFS_vertices, source_index, time);
 
 	for (int i = 0; i<num_v; i++)
 	{
 		if (indexOrder == NULL)
 		{
 			//if i-th vertex' color is white
-				//time = DFS_VISIT(Adj_array, num_v, DFS_vertices, i, time);
+			if (DFS_vertices[i].color == WHITE) {
+				time = DFS_VISIT(Adj_array, num_v, DFS_vertices, i, time);
+			}
 		}
 		else
 		{
 			//if (indexOrder[i])-th vertex' color is white
-				//time = DFS_VISIT(Adj_array, num_v, DFS_vertices, indexOrder[i], time);
+			if (DFS_vertices[indexOrder[i]].color == WHITE) {
+				time = DFS_VISIT(Adj_array, num_v, DFS_vertices, indexOrder[i], time);
+			}
 		}
 
 	}
@@ -401,10 +410,30 @@ int findSSCs(struct DFS_vertex* DFS_vertices, int num_v, int**SSCs)
 	// how to indicate there is no further element? (hint: look at printSSCs() function)
 
 	int num_SSCs = 0;
+	int* used_v = malloc(sizeof(int)*num_v);
+	for (int u = 0; u < num_v; u++) used_v[u] = 0;
 
-	//int* decendants = malloc(sizeof(int)*num_v);
-	//int num_decendants = findDecendants(DFS_vertices, num_v, u, decendants);
+	for (int u = 0; u < num_v; u++) {
+		int i = 0;
+		int* decendants = malloc(sizeof(int)*num_v);
+		int num_decendants = findDecendants(DFS_vertices, num_v, u, decendants);
 
+		if (used_v[u] == 0) {
+			SSCs[num_SSCs][0] = u;
+			used_v[u] = 1;
+
+			for (i = 1; i < num_decendants + 1; i++) {
+				SSCs[num_SSCs][i] = decendants[i-1];
+				used_v[decendants[i-1]] = 1;
+			}
+
+			SSCs[num_SSCs][i] = -1;
+			num_SSCs++;
+		}
+		free(decendants);
+	}
+
+	free(used_v);
 	return num_SSCs;
 }
 
