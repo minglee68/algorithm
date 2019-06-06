@@ -45,6 +45,7 @@ int partition(int* Array, int p, int r, int* originalIndex);
 void quickSort(int* Array, int p, int r, int* originalIndex);
 void DownAdjust(int * Array, int * originalIndex, int mid, int arraySize);
 void heapSort(int* Array, int * originalIndex, int arraySize);
+void countingSort(int * Array, int * originalIndex, int arraySize);
 int findDecendants(struct DFS_vertex* DFS_vertices, int num_v, int rootIndex, int*decendants);
 int findSSCs(struct DFS_vertex* DFS_vertices, int num_v, int**SSCs);
 void printSSCs(int** SSCs, int num_SSCs, char* v_names);
@@ -111,19 +112,9 @@ int main()
 		finishTimes[i] = DFS_vertices[i].fin;
 		originalIndex[i] = i;
 	}
-	printf("before sort: ");
-	for(int i = 0; i < num_v; i++) {
-		printf("%d:%d, ", originalIndex[i], finishTimes[i]);
-	}
-	printf("\n");
 	//quickSort(finishTimes, 0, num_v - 1, originalIndex);
-	heapSort(finishTimes, originalIndex, num_v);
-	printf("after sort: ");
-	for(int i = 0; i < num_v; i++) {
-		printf("%d:%d, ", originalIndex[i], finishTimes[i]);
-	}
-	printf("\n");
-	// try countingSort() instead of quickSort
+	//heapSort(finishTimes, originalIndex, num_v);
+	countingSort(finishTimes, originalIndex, num_v);
 	for (int i = 0; i<(int)((double)num_v / 2.0); i++)
 	{
 		swapItems(originalIndex, i, num_v - i - 1); // to get the reversed order
@@ -431,6 +422,37 @@ void heapSort(int * Array, int * originalIndex, int arraySize) {
 		arraySize--;
 		DownAdjust(Array, originalIndex, 0, arraySize);
 	}
+}
+
+void countingSort(int * Array, int * originalIndex, int arraySize) {
+	int* work_data = malloc(sizeof(int) * arraySize);
+	int* work_data_orig = malloc(sizeof(int) * arraySize);
+	int* count = malloc(sizeof(int) * (arraySize * 2 + 2));
+
+	int i;
+
+	for (i = 0; i <= arraySize * 2; i++)
+		count[i] = 0;
+
+	for (i = 0; i < arraySize; i++)
+		count[Array[i]]++;
+
+	for (i = 0; i < arraySize * 2; i++)
+		count[i + 1] += count[i];
+
+	for (i = arraySize - 1; i >= 0; i--) {
+		work_data[--count[Array[i]]] = Array[i];
+		work_data_orig[count[Array[i]]] = originalIndex[i];
+	}
+
+	for (i = 0; i < arraySize; i++) {
+		Array[i] = work_data[i];
+		originalIndex[i] = work_data_orig[i];
+	}
+
+	free(count);
+	free(work_data);
+	free(work_data_orig);
 }
 
 int findDecendants(struct DFS_vertex* DFS_vertices, int num_v, int rootIndex, int*decendants)
