@@ -43,6 +43,8 @@ void getTransAdjMat(int** Adj_mat, int** Adj_mat_trans, int num_v);
 void swapItems(int* Array, int i, int j);
 int partition(int* Array, int p, int r, int* originalIndex);
 void quickSort(int* Array, int p, int r, int* originalIndex);
+void DownAdjust(int * Array, int * originalIndex, int mid, int arraySize);
+void heapSort(int* Array, int * originalIndex, int arraySize);
 int findDecendants(struct DFS_vertex* DFS_vertices, int num_v, int rootIndex, int*decendants);
 int findSSCs(struct DFS_vertex* DFS_vertices, int num_v, int**SSCs);
 void printSSCs(int** SSCs, int num_SSCs, char* v_names);
@@ -109,8 +111,18 @@ int main()
 		finishTimes[i] = DFS_vertices[i].fin;
 		originalIndex[i] = i;
 	}
-	quickSort(finishTimes, 0, num_v - 1, originalIndex);
-	// try heapSort() instead of quickSort
+	printf("before sort: ");
+	for(int i = 0; i < num_v; i++) {
+		printf("%d:%d, ", originalIndex[i], finishTimes[i]);
+	}
+	printf("\n");
+	//quickSort(finishTimes, 0, num_v - 1, originalIndex);
+	heapSort(finishTimes, originalIndex, num_v);
+	printf("after sort: ");
+	for(int i = 0; i < num_v; i++) {
+		printf("%d:%d, ", originalIndex[i], finishTimes[i]);
+	}
+	printf("\n");
 	// try countingSort() instead of quickSort
 	for (int i = 0; i<(int)((double)num_v / 2.0); i++)
 	{
@@ -384,6 +396,40 @@ void quickSort(int* Array, int p, int r, int* originalIndex)
 		int q = partition(Array, p, r, originalIndex);
 		quickSort(Array, p, q - 1, originalIndex);
 		quickSort(Array, q + 1, r, originalIndex);
+	}
+}
+
+void DownAdjust(int * Array, int * originalIndex, int mid, int arraySize) {
+	int parent = mid;
+	int left = parent * 2 + 1;
+	int right = parent * 2 + 2;
+	int largest = parent;
+
+	if (left < arraySize && Array[left] > Array[largest]) {
+		largest = left;
+	}
+	if (right < arraySize && Array[right] > Array[largest]) {
+		largest = right;
+	}
+	if (parent != largest) {
+		swapItems(Array, parent, largest);
+		swapItems(originalIndex, parent, largest);
+		DownAdjust(Array, originalIndex, largest, arraySize);
+	}
+}
+
+void heapSort(int * Array, int * originalIndex, int arraySize) {
+	int i;
+
+	for (i = (arraySize / 2) - 1; i >= 0; i--) {
+		DownAdjust(Array, originalIndex, i, arraySize);
+	}
+
+	while (arraySize > 1){
+		swapItems(Array, 0, arraySize-1);
+		swapItems(originalIndex, 0, arraySize-1);
+		arraySize--;
+		DownAdjust(Array, originalIndex, 0, arraySize);
 	}
 }
 
