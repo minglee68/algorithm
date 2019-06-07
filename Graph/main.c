@@ -49,6 +49,10 @@ void countingSort(int * Array, int * originalIndex, int arraySize);
 int findDecendants(struct DFS_vertex* DFS_vertices, int num_v, int rootIndex, int*decendants);
 int findSSCs(struct DFS_vertex* DFS_vertices, int num_v, int**SSCs);
 void printSSCs(int** SSCs, int num_SSCs, char* v_names);
+void init_SPs(int**SPs, int**SP_pi, int arraySize, int s);
+void Relax(int**SPs, int**SP_pi, int u, int v, int w, int s);
+void BellmanFord(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize);
+void printSPs(int**SPs, int arraySize, char* v_names);
 
 int main()
 {
@@ -76,6 +80,18 @@ int main()
 	printAdjArray(Adj_array, num_v, v_names);
 
 	printf("\n");
+
+
+	// Find Single Source Shortest-Path with BellmanFord
+	int** SPs = malloc(sizeof(int*)*num_v);
+	for (int i = 0; i<num_v; i++) SPs[i] = malloc(sizeof(int)*num_v);
+	int** SP_pi = malloc(sizeof(int*)*num_v);
+	for (int i = 0; i<num_v; i++) SP_pi[i] = malloc(sizeof(int)*num_v);
+	BellmanFord(SPs, SP_pi, Adj_array, num_v);
+	printf("Single Source Shortest-Path with Bellman Ford Algorithm\n");
+	printSPs(SPs, num_v, v_names);
+	printf("\n");
+
 
 	// DFS
 	struct DFS_vertex* DFS_vertices;
@@ -129,12 +145,14 @@ int main()
 	printDFS(DFS_vertices_second, num_v, v_names);
 
 	printf("\n");
+	printf("\n");
 
 	// Find SSCs
 	int** SSCs = malloc(sizeof(int*)*num_v);
 	for (int i = 0; i<num_v; i++) SSCs[i] = malloc(sizeof(int)*num_v);
 	int num_SSCs = findSSCs(DFS_vertices_second, num_v, SSCs);
 	printSSCs(SSCs, num_SSCs, v_names);
+
 
 	// freeing allocated memories
 	for (int i = 0; i<num_v; i++)
@@ -153,6 +171,8 @@ int main()
 	free(originalIndex);
 	free(DFS_vertices_second);
 	free(SSCs);
+	free(SPs);
+	free(SP_pi);
 
 	return 0;
 }
@@ -516,6 +536,68 @@ void printSSCs(int** SSCs, int num_SSCs, char* v_names)
 		{
 			printf("%c, ", v_names[SSCs[i][index]]);
 			index++;
+		}
+		printf("\n");
+	}
+}
+
+void init_SPs(int**SPs, int**SP_pi, int arraySize, int s) {
+	int j;
+	for (j = 0; j < arraySize; j++) {
+		if (s == j) {
+			SPs[s][j] = 0;
+			SP_pi[s][j] = -1;
+		}
+		else {
+			SPs[s][j] = INFINITY;
+			SP_pi[s][j] = -1;
+		}
+	}
+}
+
+void Relax(int**SPs, int**SP_pi, int u, int v, int w, int s)  {
+	//printf("%d > %d + %d\n", SPs[s][v], SPs[s][u], w);
+	if (SPs[s][u] != INFINITY) {
+		if (SPs[s][v] > SPs[s][u] + w) {
+			SPs[s][v] = SPs[s][u] + w;
+			SP_pi[s][v] = u;
+		}
+	}
+}
+
+void BellmanFord(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize) {
+	int i, j, s;
+	for (s = 0; s < arraySize; s++) {
+		init_SPs(SPs, SP_pi, arraySize, s);
+		for (i = 0; i < arraySize - 1; i++) {
+			for (j = 0; j < arraySize; j++) {
+				//printf("%d\n", j);
+				struct adj_list* cur_list = Adj_array[j]->next;
+				while (cur_list != NULL) {
+					//printf("%d: %d\n", cur_list->v_index, cur_list->w);
+					Relax(SPs, SP_pi, j, cur_list->v_index, cur_list->w, s);
+					cur_list = cur_list->next;
+				}
+			}
+			//printf("next\n");
+		}
+	}
+}
+
+void printSPs(int**SPs, int arraySize, char* v_names) {
+	int i, j;
+	printf("\t");
+	for (i = 0; i < arraySize; i++) {
+		printf("%c\t", v_names[i]);
+	}
+	printf("\n");
+	for (i = 0; i < arraySize; i++) {
+		printf("%c\t", v_names[i]);
+		for (j = 0; j < arraySize; j++) {
+			if (SPs[i][j] == INFINITY)
+				printf("INF\t");
+			else
+				printf("%d\t", SPs[i][j]);
 		}
 		printf("\n");
 	}
