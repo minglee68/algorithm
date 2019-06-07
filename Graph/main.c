@@ -53,8 +53,8 @@ void printSSCs(int** SSCs, int num_SSCs, char* v_names);
 void init_SPs(int**SPs, int**SP_pi, int arraySize, int s);
 void Relax(int**SPs, int**SP_pi, int u, int v, int w, int s);
 void BellmanFord(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize);
-int isNotEmpty(int Q[], int arraySize);
-int ExtractMin(int**SPs, int Q[], int arraySize, int s);
+int isNotEmpty(int* Q, int arraySize);
+int ExtractMin(int**SPs, int* Q, int arraySize, int s);
 void Dijkstra(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize);
 void FloydWarshall(int**SPs, int** Adj_mat, int arraySize, char* v_names);
 void printSPs(int**SPs, int arraySize, char* v_names);
@@ -163,8 +163,8 @@ int main()
 		originalIndex[i] = i;
 	}
 	//quickSort(finishTimes, 0, num_v - 1, originalIndex);
-	//heapSort(finishTimes, originalIndex, num_v);
-	countingSort(finishTimes, originalIndex, num_v);
+	heapSort(finishTimes, originalIndex, num_v);
+	//countingSort(finishTimes, originalIndex, num_v);
 	for (int i = 0; i<(int)((double)num_v / 2.0); i++)
 	{
 		swapItems(originalIndex, i, num_v - i - 1); // to get the reversed order
@@ -614,7 +614,7 @@ void BellmanFord(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySiz
 	}
 }
 
-int isNotEmpty(int Q[], int arraySize) {
+int isNotEmpty(int* Q, int arraySize) {
 	int flag = 0;
 	int i;
 	for (i = 0; i < arraySize; i++) {
@@ -624,7 +624,7 @@ int isNotEmpty(int Q[], int arraySize) {
 	return flag;
 }
 
-int ExtractMin(int**SPs, int Q[], int arraySize, int s) {
+int ExtractMin(int**SPs, int* Q, int arraySize, int s) {
 	int min = INFINITY;
 	int min_index = -1;
 	int i;
@@ -642,8 +642,12 @@ void Dijkstra(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize) 
 	int i, j, s;
 	for (s = 0; s < arraySize; s++) {
 		init_SPs(SPs, SP_pi, arraySize, s);
-		int S[7] = {0};
-		int Q[7] = {1, 1, 1, 1, 1, 1, 1};
+		int* S = malloc(sizeof(int)*arraySize);
+		int* Q = malloc(sizeof(int)*arraySize);
+		for (int i = 0; i < arraySize; i++) {
+			S[i] = 0;
+			Q[i] = 1;
+		}
 		while (isNotEmpty(Q, arraySize) == 1) {
 			int u = ExtractMin(SPs, Q, arraySize, s);
 			if (u == -1) break;
@@ -657,6 +661,8 @@ void Dijkstra(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize) 
 				cur_list = cur_list->next;
 			}
 		}
+		free(S);
+		free(Q);
 	}
 }
 
