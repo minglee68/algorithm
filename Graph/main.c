@@ -52,6 +52,9 @@ void printSSCs(int** SSCs, int num_SSCs, char* v_names);
 void init_SPs(int**SPs, int**SP_pi, int arraySize, int s);
 void Relax(int**SPs, int**SP_pi, int u, int v, int w, int s);
 void BellmanFord(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize);
+int isNotEmpty(int Q[], int arraySize);
+int ExtractMin(int**SPs, int Q[], int arraySize, int s);
+void Dijkstra(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize);
 void printSPs(int**SPs, int arraySize, char* v_names);
 
 int main()
@@ -88,7 +91,13 @@ int main()
 	int** SP_pi = malloc(sizeof(int*)*num_v);
 	for (int i = 0; i<num_v; i++) SP_pi[i] = malloc(sizeof(int)*num_v);
 	BellmanFord(SPs, SP_pi, Adj_array, num_v);
-	printf("Single Source Shortest-Path with Bellman Ford Algorithm\n");
+	printf("All Pairs Shortest-Path with Bellman Ford Algorithm\n");
+	printSPs(SPs, num_v, v_names);
+	printf("\n");
+
+	// Find Single Source Shortest-Path with Dijkstra
+	Dijkstra(SPs, SP_pi, Adj_array, num_v);
+	printf("All Pairs Shortest-Path with Dijkstra Algorithm\n");
 	printSPs(SPs, num_v, v_names);
 	printf("\n");
 
@@ -581,6 +590,59 @@ void BellmanFord(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySiz
 			}
 			//printf("next\n");
 		}
+	}
+}
+
+int isNotEmpty(int Q[], int arraySize) {
+	int flag = 0;
+	int i;
+	for (i = 0; i < arraySize; i++) {
+		if (Q[i] == 1)
+			flag = 1;
+	}
+	return flag;
+}
+
+int ExtractMin(int**SPs, int Q[], int arraySize, int s) {
+	int min = INFINITY;
+	int min_index = -1;
+	int i;
+	for (i = 0; i < arraySize; i++) {
+		if (Q[i] == 1 && min > SPs[s][i]){ 
+			min = SPs[s][i];
+			min_index = i;
+		}
+	}
+
+	return min_index;
+}
+
+void Dijkstra(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize) {
+	int i, j, s;
+	for (s = 0; s < arraySize; s++) {
+		init_SPs(SPs, SP_pi, arraySize, s);
+		int S[7] = {0};
+		int Q[7] = {1, 1, 1, 1, 1, 1, 1};
+		//printf("s = %d\n", s);
+		while (isNotEmpty(Q, arraySize) == 1) {
+			int u = ExtractMin(SPs, Q, arraySize, s);
+			if (u == -1) break;
+			//printf("u: %d\n", u);
+			Q[u] = 0;
+			S[u] = 1;
+			//printf("Q: ");
+			//for(j = 0; j < arraySize; j++) {
+			//	printf("%d, ", Q[j]);
+			//}
+			//printf("\n");
+			struct adj_list* cur_list = Adj_array[u]->next;
+			while (cur_list != NULL) {
+				//printf("%d: %d\n", cur_list->v_index, cur_list->w);
+				Relax(SPs, SP_pi, u, cur_list->v_index, cur_list->w, s);
+				cur_list = cur_list->next;
+			}
+		}
+		//printf("\n");
 	}
 }
 
