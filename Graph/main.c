@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <time.h>
 
 #define INFINITY INT_MAX
 
@@ -55,10 +56,15 @@ void BellmanFord(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySiz
 int isNotEmpty(int Q[], int arraySize);
 int ExtractMin(int**SPs, int Q[], int arraySize, int s);
 void Dijkstra(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize);
+void FloydWarshall(int**SPs, int** Adj_mat, int arraySize, char* v_names);
 void printSPs(int**SPs, int arraySize, char* v_names);
 
 int main()
 {
+	// time
+	clock_t begin, end;
+	double time_consumed;
+
 	// input data
 	char filename[] = "HW4.dat";
 
@@ -85,19 +91,38 @@ int main()
 	printf("\n");
 
 
-	// Find Single Source Shortest-Path with BellmanFord
+	// Assigning Shortest Path Matrix
 	int** SPs = malloc(sizeof(int*)*num_v);
 	for (int i = 0; i<num_v; i++) SPs[i] = malloc(sizeof(int)*num_v);
 	int** SP_pi = malloc(sizeof(int*)*num_v);
 	for (int i = 0; i<num_v; i++) SP_pi[i] = malloc(sizeof(int)*num_v);
-	BellmanFord(SPs, SP_pi, Adj_array, num_v);
-	printf("All Pairs Shortest-Path with Bellman Ford Algorithm\n");
+
+	// Find All Pairs Shortest-Path with Dijkstra
+	begin = clock();
+	Dijkstra(SPs, SP_pi, Adj_array, num_v);
+	end = clock();
+	time_consumed = (double)(end - begin) / CLOCKS_PER_SEC;
+	printf("It took %f seconds to compute shortest paths between cities with Dijkstra’s algorithm as follows.\n", time_consumed);
 	printSPs(SPs, num_v, v_names);
 	printf("\n");
 
-	// Find Single Source Shortest-Path with Dijkstra
-	Dijkstra(SPs, SP_pi, Adj_array, num_v);
-	printf("All Pairs Shortest-Path with Dijkstra Algorithm\n");
+
+	// Find All Pairs Shortest-Path with BellmanFord
+	begin = clock();
+	BellmanFord(SPs, SP_pi, Adj_array, num_v);
+	end = clock();
+	time_consumed = (double)(end - begin) / CLOCKS_PER_SEC;
+	printf("It took %f seconds to compute shortest paths between cities with Bellman Ford’s algorithm as follows.\n", time_consumed);
+	printSPs(SPs, num_v, v_names);
+	printf("\n");
+
+
+	// Find All Pairs Shortest-Path with Floyd-Warshall
+	begin = clock();
+	FloydWarshall(SPs, Adj_mat, num_v, v_names);
+	end = clock();
+	time_consumed = (double)(end - begin) / CLOCKS_PER_SEC;
+	printf("It took %f seconds to compute shortest paths between cities with Floyd-Warshall’s algorithm as follows.\n", time_consumed);
 	printSPs(SPs, num_v, v_names);
 	printf("\n");
 
@@ -565,7 +590,6 @@ void init_SPs(int**SPs, int**SP_pi, int arraySize, int s) {
 }
 
 void Relax(int**SPs, int**SP_pi, int u, int v, int w, int s)  {
-	//printf("%d > %d + %d\n", SPs[s][v], SPs[s][u], w);
 	if (SPs[s][u] != INFINITY) {
 		if (SPs[s][v] > SPs[s][u] + w) {
 			SPs[s][v] = SPs[s][u] + w;
@@ -580,15 +604,12 @@ void BellmanFord(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySiz
 		init_SPs(SPs, SP_pi, arraySize, s);
 		for (i = 0; i < arraySize - 1; i++) {
 			for (j = 0; j < arraySize; j++) {
-				//printf("%d\n", j);
 				struct adj_list* cur_list = Adj_array[j]->next;
 				while (cur_list != NULL) {
-					//printf("%d: %d\n", cur_list->v_index, cur_list->w);
 					Relax(SPs, SP_pi, j, cur_list->v_index, cur_list->w, s);
 					cur_list = cur_list->next;
 				}
 			}
-			//printf("next\n");
 		}
 	}
 }
@@ -623,26 +644,38 @@ void Dijkstra(int**SPs, int**SP_pi, struct adj_list** Adj_array, int arraySize) 
 		init_SPs(SPs, SP_pi, arraySize, s);
 		int S[7] = {0};
 		int Q[7] = {1, 1, 1, 1, 1, 1, 1};
-		//printf("s = %d\n", s);
 		while (isNotEmpty(Q, arraySize) == 1) {
 			int u = ExtractMin(SPs, Q, arraySize, s);
 			if (u == -1) break;
-			//printf("u: %d\n", u);
 			Q[u] = 0;
 			S[u] = 1;
-			//printf("Q: ");
-			//for(j = 0; j < arraySize; j++) {
-			//	printf("%d, ", Q[j]);
-			//}
-			//printf("\n");
 			struct adj_list* cur_list = Adj_array[u]->next;
 			while (cur_list != NULL) {
-				//printf("%d: %d\n", cur_list->v_index, cur_list->w);
-				Relax(SPs, SP_pi, u, cur_list->v_index, cur_list->w, s);
+				if (Q[cur_list->v_index] == 1) {
+					Relax(SPs, SP_pi, u, cur_list->v_index, cur_list->w, s);
+				}
 				cur_list = cur_list->next;
 			}
 		}
-		//printf("\n");
+	}
+}
+
+void FloydWarshall(int**SPs, int** Adj_mat, int arraySize, char* v_names) {
+	int i, j, k;
+	for (i = 0; i < arraySize; i++) {
+		for (j = 0; j < arraySize; j++) {
+			SPs[i][j] = Adj_mat[i][j];
+		}
+	}
+
+	for (k = 0; k < arraySize; k++) {
+		for (i = 0; i < arraySize; i++) {
+			for (j = 0; j < arraySize; j++) {
+				if (SPs[i][k] != INFINITY && SPs[k][j] != INFINITY && SPs[i][k] + SPs[k][j] < SPs[i][j]) {
+					SPs[i][j] = SPs[i][k] + SPs[k][j];
+				}
+			}
+		}
 	}
 }
 
